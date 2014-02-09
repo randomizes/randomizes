@@ -20,6 +20,7 @@ func main() {
 	initTotalBytes()
 
 	mux := routes.New()
+	mux.Get("/", http.HandlerFunc(handleLandingPage))
 	mux.Get("/totalbytes", http.HandlerFunc(handleTotalBytes))
 	mux.Get("/blob", http.HandlerFunc(handleBlob))
 	mux.Get("/blob/:size([0-9]*)", http.HandlerFunc(handleBlob))
@@ -51,11 +52,15 @@ func initCipher() {
 
 // Handlers
 
+func handleLandingPage(w http.ResponseWriter, req *http.Request) {
+	http.ServeFile(w, req, "./index.html")
+}
+
 func handleTotalBytes(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%d", totalBytes)
 }
 
-func handleBlob(w http.ResponseWriter, req *http.Request) {
+func handleBlob(w http.ResponseWriter, r *http.Request) {
 	res, err := http.Get("https://github.com/timeline.json")
 	if err != nil {
 		fmt.Println(err)

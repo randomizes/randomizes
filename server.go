@@ -31,7 +31,7 @@ func main() {
 	mux.HandleFunc("/blob/{size([0-9]*}", http.HandlerFunc(handleBlob))
 
 	http.Handle("/", mux)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":3000", nil)
 
 }
 
@@ -70,6 +70,7 @@ func handleLandingPage(w http.ResponseWriter, req *http.Request) {
 }
 
 func handleTotalBytes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/octet-stream")
 	for {
 		flusher, ok := w.(http.Flusher)
 		if !ok {
@@ -78,7 +79,6 @@ func handleTotalBytes(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(w, "%d", totalBytes)
 		flusher.Flush()
-
 		time.Sleep(1 * time.Second)
 	}
 }

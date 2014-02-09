@@ -86,6 +86,6 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 
 // --
 
-func writeTotalBytes(chan int64 c) {
+func writeTotalBytes(c chan int64) {
 
 }

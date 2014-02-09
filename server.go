@@ -28,7 +28,7 @@ func main() {
 	mux.HandleFunc("/", http.HandlerFunc(handleLandingPage))
 	mux.HandleFunc("/totalbytes", http.HandlerFunc(handleTotalBytes))
 	mux.HandleFunc("/blob", http.HandlerFunc(handleBlob))
-	mux.HandleFunc("/blob/{size([0-9]*}", http.HandlerFunc(handleBlob))
+	mux.HandleFunc("/blob/{size:[0-9]+}", http.HandlerFunc(handleBlob))
 
 	http.Handle("/", mux)
 	http.ListenAndServe(":3000", nil)
@@ -90,7 +90,9 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	size, err := strconv.Atoi(r.URL.Query().Get(":size"))
+	params := mux.Vars(r)
+
+	size, err := strconv.Atoi(params["size"])
 	if err != nil {
 		size = 64
 	}

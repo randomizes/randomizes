@@ -3,24 +3,174 @@
     <style type="text/css">
     @import url(//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css);
     @import url(//fonts.googleapis.com/css?family=Arimo:700);
+    @import url(http://fonts.googleapis.com/css?family=Source+Code+Pro:400,900);
+    @import url(http://fonts.googleapis.com/css?family=Open+Sans);
+    .brightbg {
+      width: 100%;
+      padding-bottom: 50px;
+      padding-top: 50px;
+      background-color: #CFCFCF;
+    }
+    .darkbg {
+      width: 100%;
+      padding-bottom: 50px;
+      padding-top: 50px;
+      background-color: #F0F0F0;
+    }
     body {
       margin: 0;
       padding: 0;
       background-color: #222;
+      color: #;
+    }
+    h1 {
+      text-align: center;
+      font-size: 80pt;
+      margin-bottom: 0;
+      margin-top: 0;
+      color: #333;
+      font-family: "Source Code Pro"
+    }
+    h2 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 0;
+      font-size: 40pt;
+      color: #555;
+      font-family: "Source Code Pro"
+    }
+    pre {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      padding: 7px;
+      background-color: #B3B3B3;
+      font-family: "Source Code Pro";
+      font-size: 16pt;
     }
     #counter {
       font-family: "Arimo";
       font-size: 80pt;
-      color: #ddd;
-
       margin: 0 auto;
+    }
+    #bytescounter {
+      text-align: center;
+    }
+    #generate {
+      text-align: right;
+    }
+    #bytesgenerated {
+      font-size: 30pt;
+      color: #888;
+      font-family: "Arimo";
+    }
+
+    #why {
+      font-family: "Open Sans";
+      font-size: 16pt;
+    }
+
+    #why h1 {
+      font-family: "Open Sans";
+      font-size: 20pt;
+    }
+
+    #generate input {
+      background-color: #f4f4f4;
     }
     </style>
   </head>
   <body>
-
-    <div id="counter">23428492323</div>
+    <header class="darkbg container-fluid">
+      <h1>/dev/random</h1>
+      <h2>as a service</h2>
+    </header>
+    <section class="brightbg container-fluid">
+      <div class="row">
+        <div class="col-md-offset-2 col-md-8">
+          <pre id="random">hellooo</pre>
+          <form id="generate" class="form-inline" role="form">
+            <div class="form-group">
+              <label class="sr-only" for="randomlength">Email address</label>
+              <input type="number" value="256" class="form-control input-lg" id="randomlength" placeholder="length">
+            </div>
+            <a id="give-me-the-blob" type="submit" class="btn btn-success btn-lg">generate</a>
+          </form>
+        </div>
+      </div>
+    </section>
+    <section id="bytescounter" class="darkbg">
+      <div id="counter">loading....</div>
+      <div id="bytesgenerated">bytes generated so far</div>
+    </section>
+    <section id="why" class="brightbg">
+      <div class="row">
+        <div class="col-md-offset-2 col-md-8">
+          <h1>why ?</h1>
+          <p>Computers rely on random numbers for cryptography, and you rely on cryptography to communicate safely with your friends and family.</p>
+        </div>
+      </div>
+    </section>
     <script src="//code.jquery.com/jquery-2.1.0.min.js" type="text/javascript"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+      function getBlob (length, cb) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/blob/'+length, true);
+        xhr.responseType = 'blob';
+        xhr.onload = function onload (e) {
+          if (this.status == 200) {
+            var blob = this.response;
+            onBlob(blob);
+          }
+        };
+        xhr.send();
+
+        function onBlob (blob) {
+          var reader = new FileReader();
+          reader.onloadend = function() {
+            cb(reader.
+                result.
+                replace('data:application/octet-stream;base64,', '').
+                replace('==', ''));
+          }
+          reader.readAsDataURL(blob);
+        }
+      }
+
+
+      // kick start
+      getBlob(256, onBlob);
+
+
+      $('#give-me-the-blob').click(getABlob);
+      function getABlob () {
+        var length = $('#randomlength').val();
+        getBlob(length, onBlob);
+      }
+
+      function onBlob (blob) {
+        $('#random').html(blob);
+      }
+
+
+      function streamBytesGenerated () {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/totalbytes');
+        xhr.seenBytes = 0;
+        xhr.onreadystatechange = function() {
+          console.log('ready state change')
+          if(xhr.readyState > 2) {
+            var newData = xhr.responseText.substr(xhr.seenBytes);
+            $('#counter').html(newData);
+            xhr.seenBytes = xhr.responseText.length;
+          }
+        };
+
+        xhr.send();
+      }
+
+      streamBytesGenerated();
+
+    </script>
   </body>
 </html>

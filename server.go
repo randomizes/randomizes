@@ -4,38 +4,51 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
-	"github.com/drone/routes"
+	_ "github.com/drone/routes"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 var totalBytes int64
 
 var stream cipher.Stream
 
+var channel chan int64
+
 func main() {
+
 	initCipher()
 	initTotalBytes()
 
-	mux := routes.New()
-	mux.Get("/", http.HandlerFunc(handleLandingPage))
-	mux.Get("/totalbytes", http.HandlerFunc(handleTotalBytes))
-	mux.Get("/blob", http.HandlerFunc(handleBlob))
-	mux.Get("/blob/:size([0-9]*)", http.HandlerFunc(handleBlob))
+	mux := mux.NewRouter()
+	mux.HandleFunc("/", http.HandlerFunc(handleLandingPage))
+	mux.HandleFunc("/totalbytes", http.HandlerFunc(handleTotalBytes))
+	mux.HandleFunc("/blob", http.HandlerFunc(handleBlob))
+	mux.HandleFunc("/blob/:size([0-9]*)", http.HandlerFunc(handleBlob))
+
 	http.Handle("/", mux)
 	http.ListenAndServe(":8080", nil)
+
 }
 
 // Init
 
 func initTotalBytes() {
-	file, err := os.Open("totalbytes") // For read access.
+	file, err := os.OpenFile("totalbytes", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fscanln(file, "%d", &totalBytes)
+	fmt.Fscanf(file, "%d", &totalBytes)
+
+	fmt.Println("totalBytes: ", totalBytes)
+
+	channel = make(chan int64, 128)
+
+	go writeTotalBytes(file)
 }
 
 func initCipher() {
@@ -57,7 +70,17 @@ func handleLandingPage(w http.ResponseWriter, req *http.Request) {
 }
 
 func handleTotalBytes(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "%d", totalBytes)
+	for {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "webserver doesn't support hijacking", http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(w, "%d", totalBytes)
+		flusher.Flush()
+
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func handleBlob(w http.ResponseWriter, r *http.Request) {
@@ -81,11 +104,27 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	totalBytes += int64(size)
+	channel <- int64(size)
 }
 
 // --
 
-func writeTotalBytes(c chan int64) {
+func writeTotalBytes(file *os.File) {
+	for {
+		totalBytes += <-channel
 
+		_, err := file.Seek(0, 0)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		//_, err :=
+		fmt.Fprintf(file, "%d", totalBytes)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// }
+
+		file.Sync()
+		fmt.Println("file written: ", totalBytes)
+	}
 }

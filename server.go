@@ -27,6 +27,7 @@ func main() {
 
 	mux := routes.New()
 
+	mux.Get("/", http.HandlerFunc(handleLandingPage))
 	mux.Get("/totalbytes", http.HandlerFunc(handleTotalBytes))
 
 	mux.Get("/blob", http.HandlerFunc(handleBlob))
@@ -44,6 +45,10 @@ func initTotalBytes() {
 
 func initCipher() {
 
+}
+
+func handleLandingPage(w http.ResponseWriter, req *http.Request) {
+	http.ServeFile(w, req, "./index.html")
 }
 
 func handleTotalBytes(w http.ResponseWriter, req *http.Request) {

@@ -28,7 +28,7 @@ func main() {
 	mux.HandleFunc("/", http.HandlerFunc(handleLandingPage))
 	mux.HandleFunc("/totalbytes", http.HandlerFunc(handleTotalBytes))
 	mux.HandleFunc("/blob", http.HandlerFunc(handleBlob))
-	mux.HandleFunc("/blob/:size([0-9]*)", http.HandlerFunc(handleBlob))
+	mux.HandleFunc("/blob/{size([0-9]*}", http.HandlerFunc(handleBlob))
 
 	http.Handle("/", mux)
 	http.ListenAndServe(":8080", nil)
@@ -113,7 +113,7 @@ func writeTotalBytes(file *os.File) {
 	for {
 		totalBytes += <-channel
 
-		_, err := file.Seek(0, 0)
+		err := file.Truncate(0)
 		if err != nil {
 			fmt.Println(err)
 		}

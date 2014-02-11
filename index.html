@@ -3,8 +3,8 @@
     <style type="text/css">
     @import url(//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css);
     @import url(//fonts.googleapis.com/css?family=Arimo:700);
-    @import url(http://fonts.googleapis.com/css?family=Source+Code+Pro:400,900);
-    @import url(http://fonts.googleapis.com/css?family=Open+Sans);
+    @import url(//fonts.googleapis.com/css?family=Source+Code+Pro:400,900);
+    @import url(//fonts.googleapis.com/css?family=Open+Sans);
     .brightbg {
       width: 100%;
       padding-bottom: 50px;
@@ -21,23 +21,24 @@
       margin: 0;
       padding: 0;
       background-color: #222;
-      color: #;
+      font-family: "Open Sans";
+      font-size: 16pt;
     }
-    h1 {
+    header h1 {
       text-align: center;
       font-size: 80pt;
       margin-bottom: 0;
       margin-top: 0;
       color: #333;
-      font-family: "Source Code Pro"
+      font-family: "Arimo"
     }
-    h2 {
+    header h2 {
       text-align: center;
       margin-top: 0;
       margin-bottom: 0;
       font-size: 40pt;
       color: #555;
-      font-family: "Source Code Pro"
+      font-family: "Arimo"
     }
     pre {
       margin-top: 20px;
@@ -64,18 +65,39 @@
       font-family: "Arimo";
     }
 
-    #why {
-      font-family: "Open Sans";
-      font-size: 16pt;
+    #generate input {
+      background-color: #f4f4f4;
     }
 
-    #why h1 {
-      font-family: "Open Sans";
+    .well {
+      font-family: "Source Code Pro";
+    }
+
+    footer {
+      padding-top: 80px;
+      padding-bottom: 50px;
+      color: #f9f9f9;
+      font-size: 40pt;
+    }
+
+    footer h3 {
+      font-size: 30pt;
+      margin-top: 0;
+    }
+
+    footer ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
       font-size: 20pt;
     }
 
-    #generate input {
-      background-color: #f4f4f4;
+    footer ul li a:hover {
+      text-decoration: none;
+    }
+
+    footer p {
+      font-size: 16pt;
     }
     </style>
   </head>
@@ -87,7 +109,7 @@
     <section class="brightbg container-fluid">
       <div class="row">
         <div class="col-md-offset-2 col-md-8">
-          <pre id="random">hellooo</pre>
+          <pre id="random">loading...</pre>
           <form id="generate" class="form-inline" role="form">
             <div class="form-group">
               <label class="sr-only" for="randomlength">Email address</label>
@@ -102,14 +124,37 @@
       <div id="counter">loading....</div>
       <div id="bytesgenerated">bytes generated so far</div>
     </section>
-    <section id="why" class="brightbg">
-      <div class="row">
-        <div class="col-md-offset-2 col-md-8">
-          <h1>why ?</h1>
-          <p>Computers rely on random numbers for cryptography, and you rely on cryptography to communicate safely with your friends and family.</p>
-        </div>
+    <section class="row brightbg">
+      <div class="col-md-offset-2 col-md-8">
+        <h1>Why ?</h1>
+        <p>Computers rely on random numbers for cryptography, and you rely on cryptography to communicate safely with your friends and family.</p>
       </div>
     </section>
+    <section class="row darkbg">
+      <div class="col-md-offset-2 col-md-8">
+        <h1>Try it now!</h1>
+        <h3>Get a random Blob</h3>
+        <div class="well">curl http://randomiz.es/blob/&lt;length&gt;</div>
+        <h3>Get a random stream</h3>
+        <div class="well">curl -N http://randomiz.es/stream</div>
+      </div>
+    </section>
+    <footer>
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-offset-2 col-md-4">
+            <h3>The team</h3>
+            <ul>
+              <li><a href="https://github.com/diffcunha">Diogo Cunha</a></li>
+              <li><a href="https://github.com/joaojeronimo">João Jerónimo</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <p>Sem contar com a organização ficámos em primeiro.</p>
+          </div>
+        </div>
+      </div>
+    </footer>
     <script src="//code.jquery.com/jquery-2.1.0.min.js" type="text/javascript"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js" type="text/javascript"></script>
     <script type="text/javascript">

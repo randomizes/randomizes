@@ -1,28 +1,33 @@
 package main
 
 import (
+	_ "bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
-	_ "github.com/drone/routes"
 	"github.com/gorilla/mux"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
 var totalBytes int64
 
-var stream cipher.Stream
-
 var channel chan int64
+
+var serviceAvailable int32 = 0 // Porcaria do go n tem atomic.toogleBool ...
 
 func main() {
 
-	initCipher()
 	initTotalBytes()
+
+	fmt.Print("Initializing entropy generator - ")
+	initEntropyGenerator()
+	fmt.Println("done")
 
 	mux := mux.NewRouter()
 	mux.HandleFunc("/", http.HandlerFunc(handleLandingPage))
@@ -52,15 +57,94 @@ func initTotalBytes() {
 }
 
 func initCipher() {
-	key := []byte("jiboias ao poder")
 
-	block, err := aes.NewCipher(key)
+}
+
+type RingChannel struct {
+	channel chan byte
+	//	returnChannel chan byte
+}
+
+func (r *RingChannel) rotate() {
+	select {
+	case b := <-r.channel:
+		r.channel <- b
+	default:
+	}
+	// fmt.Println("rotate() - byte rotated: %X", b)
+}
+
+func (r *RingChannel) get() byte {
+	b := <-r.channel
+	r.channel <- b
+	return b
+}
+
+func (r *RingChannel) put(b byte) {
+	select {
+	case <-channel:
+		fmt.Println("put() - removed")
+	default:
+		fmt.Println("put() - nothing remove")
+	}
+	r.channel <- b
+}
+
+func NewRingChannel(size int) *RingChannel {
+	return &RingChannel{make(chan byte, size)}
+}
+
+var ringChannel = NewRingChannel(1024)
+
+// --
+
+var pool []byte
+
+func initEntropyGenerator() {
+
+	block, err := aes.NewCipher([]byte("jiboias ao poder"))
 	if err != nil {
 		panic(err)
 	}
 
 	var iv [aes.BlockSize]byte
-	stream = cipher.NewOFB(block, iv[:])
+	stream := cipher.NewOFB(block, iv[:])
+
+	pool = make([]byte, 1024, 1024)
+
+	// Plain Generator
+	t1 := time.NewTicker(time.Second * 3)
+	go func() {
+		for _ = range t1.C {
+
+			fmt.Println("gen() - FETCHING")
+
+			res, err := http.Get("https://github.com/timeline.json")
+			if err != nil {
+				fmt.Println("ERROR: ", err)
+				atomic.StoreInt32(&serviceAvailable, 0)
+				continue
+			}
+
+			reader := &cipher.StreamReader{S: stream, R: res.Body}
+			io.ReadFull(reader, pool)
+
+			//atomic.StoreInt32(&serviceAvailable, 1)
+
+			fmt.Println("gen() - DONE")
+		}
+	}()
+
+	// Shufffler
+	t2 := time.NewTicker(time.Second * 1)
+	go func() {
+		fmt.Println("suffler() - STARTED")
+		for _ = range t2.C {
+			pool[rand.Intn(1024)] = pool[rand.Intn(1024)]
+			fmt.Println("suffler() - SHUFFLE")
+		}
+	}()
+
 }
 
 // Handlers
@@ -84,16 +168,10 @@ func handleTotalBytes(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleBlob(w http.ResponseWriter, r *http.Request) {
-	res, err := http.Get("https://github.com/timeline.json")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
 	params := mux.Vars(r)
-
 	size, err := strconv.Atoi(params["size"])
-	if err != nil {
+
+	if size < 0 || err != nil {
 		size = 64
 	}
 
@@ -101,9 +179,16 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 		size = 1024
 	}
 
-	reader := &cipher.StreamReader{S: stream, R: res.Body}
-	if _, err := io.CopyN(w, reader, int64(size)); err != nil {
-		panic(err)
+	fmt.Printf("handleBlob() - REQUEST %d BYTES\n", size)
+
+	start := rand.Intn(1024)
+	if start+size > 1024 {
+		w.Write(pool[start:])
+		w.Write(pool[:size-(1024-start)])
+		fmt.Printf("handleBlob() - START: [%d : 2014] - END [0 : %d]\n", start, size-(1024-start))
+	} else {
+		w.Write(pool[start:size])
+		fmt.Printf("handleBlob() - START: [%d : %d]\n", start, size)
 	}
 
 	channel <- int64(size)

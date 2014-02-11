@@ -144,7 +144,7 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 		w.Write(pool[:size-(1024-start)])
 		fmt.Printf("handleBlob() - START: [%d : 2014] - END [0 : %d]\n", start, size-(1024-start))
 	} else {
-		w.Write(pool[start:size])
+		w.Write(pool[start:start+size])
 		fmt.Printf("handleBlob() - START: [%d : %d]\n", start, size)
 	}
 

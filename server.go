@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
@@ -19,6 +18,8 @@ var totalBytes int64
 
 var channel chan int64
 
+var pool []byte
+
 var serviceAvailable int32 = 0 // Porcaria do go n tem atomic.toogleBool ...
 
 func main() {
@@ -27,7 +28,7 @@ func main() {
 
 	fmt.Print("Initializing entropy generator - ")
 	initEntropyGenerator()
-	fmt.Println("done")
+	fmt.Println("DONE")
 
 	mux := mux.NewRouter()
 	mux.HandleFunc("/", http.HandlerFunc(handleLandingPage))
@@ -55,50 +56,6 @@ func initTotalBytes() {
 
 	go writeTotalBytes(file)
 }
-
-func initCipher() {
-
-}
-
-type RingChannel struct {
-	channel chan byte
-	//	returnChannel chan byte
-}
-
-func (r *RingChannel) rotate() {
-	select {
-	case b := <-r.channel:
-		r.channel <- b
-	default:
-	}
-	// fmt.Println("rotate() - byte rotated: %X", b)
-}
-
-func (r *RingChannel) get() byte {
-	b := <-r.channel
-	r.channel <- b
-	return b
-}
-
-func (r *RingChannel) put(b byte) {
-	select {
-	case <-channel:
-		fmt.Println("put() - removed")
-	default:
-		fmt.Println("put() - nothing remove")
-	}
-	r.channel <- b
-}
-
-func NewRingChannel(size int) *RingChannel {
-	return &RingChannel{make(chan byte, size)}
-}
-
-var ringChannel = NewRingChannel(1024)
-
-// --
-
-var pool []byte
 
 func initEntropyGenerator() {
 
@@ -129,7 +86,7 @@ func initEntropyGenerator() {
 			reader := &cipher.StreamReader{S: stream, R: res.Body}
 			io.ReadFull(reader, pool)
 
-			//atomic.StoreInt32(&serviceAvailable, 1)
+			atomic.StoreInt32(&serviceAvailable, 1)
 
 			fmt.Println("gen() - DONE")
 		}

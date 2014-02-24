@@ -10,12 +10,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
 var totalBytes int64
-
-var channel chan int64
 
 var pool []byte
 
@@ -49,11 +48,21 @@ func initTotalBytes() {
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Fscanf(file, "%d", &totalBytes)
 
-	channel = make(chan int64, 128)
-
-	go writeTotalBytes(file)
+	t1 := time.NewTicker(time.Second * 1)
+	go func() {
+		for _ = range t1.C {
+			err := file.Truncate(0)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Fprintf(file, "%d", totalBytes)
+			file.Sync()
+			fmt.Println("file written: ", totalBytes)
+		}
+	}()
 }
 
 func initEntropyGenerator() {
@@ -146,17 +155,16 @@ func handleBlob(w http.ResponseWriter, r *http.Request) {
 		w.Write(pool[start : start+size])
 		fmt.Printf("handleBlob() - START: [%d : %d]\n", start, size)
 	}
-
-	channel <- int64(size)
+	atomic.AddInt64(&totalBytes, int64(size))
 }
 
 func handleStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		panic("webserver doesn't support hijacking")
-	}
+	// flusher, ok := w.(http.Flusher)
+	// if !ok {
+	// 	panic("webserver doesn't support hijacking")
+	// }
 
 	for {
 		start := rand.Intn(1024)
@@ -164,26 +172,9 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		if err != nil || n != 1 {
 			return
 		}
-		flusher.Flush()
-		channel <- 1
-		//time.Sleep(time.Millisecond * 100)
+		//		flusher.Flush()
+		atomic.AddInt64(&totalBytes, 1)
 	}
 }
 
 // --
-
-func writeTotalBytes(file *os.File) {
-	for {
-		totalBytes += <-channel
-
-		err := file.Truncate(0)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		fmt.Fprintf(file, "%d", totalBytes)
-
-		file.Sync()
-		fmt.Println("file written: ", totalBytes)
-	}
-}

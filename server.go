@@ -21,7 +21,9 @@ var pool []byte
 
 func main() {
 
+	fmt.Print("Initializing total bytes writer - ")
 	initTotalBytes()
+	fmt.Println("DONE")
 
 	fmt.Print("Initializing entropy generator - ")
 	initEntropyGenerator()
@@ -34,6 +36,7 @@ func main() {
 	mux.HandleFunc("/blob/{size:[0-9]+}", http.HandlerFunc(handleBlob))
 	mux.HandleFunc("/stream", http.HandlerFunc(handleStream))
 
+	fmt.Println("Listening")
 	http.Handle("/", mux)
 	http.ListenAndServe(":3000", nil)
 
@@ -47,8 +50,6 @@ func initTotalBytes() {
 		panic(err)
 	}
 	fmt.Fscanf(file, "%d", &totalBytes)
-
-	fmt.Println("totalBytes: ", totalBytes)
 
 	channel = make(chan int64, 128)
 
@@ -79,6 +80,7 @@ func initEntropyGenerator() {
 			}
 			reader := &cipher.StreamReader{S: stream, R: res.Body}
 			io.ReadFull(reader, pool)
+			res.Body.Close()
 			fmt.Println("gen() - DONE")
 		}
 	}()
@@ -88,7 +90,10 @@ func initEntropyGenerator() {
 	go func() {
 		fmt.Println("suffler() - STARTED")
 		for _ = range t2.C {
-			pool[rand.Intn(1024)] = pool[rand.Intn(1024)]
+			i, j := rand.Intn(1024), rand.Intn(1024)
+			tmp := pool[i]
+			pool[i] = pool[j]
+			pool[j] = tmp
 			fmt.Println("suffler() - SHUFFLE")
 		}
 	}()

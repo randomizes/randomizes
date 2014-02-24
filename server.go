@@ -166,7 +166,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		}
 		flusher.Flush()
 		channel <- 1
-		time.Sleep(time.Millisecond * 100)
+		//time.Sleep(time.Millisecond * 100)
 	}
 }
 
